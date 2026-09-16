@@ -9,7 +9,7 @@ Use the authenticated `gh` CLI to retrieve issues from a repository URL. This wo
 
 ## Inputs
 
-Ask for the GitHub repository URL if it was not provided. Accept optional filters for issue state (`open`, `closed`, or `all`) and result limit. Default to `open` and 30 issues.
+Ask for the GitHub repository URL if it was not provided. Accept optional filters for issue state (`open`, `closed`, or `all`), labels, and result limit. Default to `open`, all labels, and 30 issues.
 
 ## Workflow
 
@@ -28,15 +28,23 @@ Ask for the GitHub repository URL if it was not provided. Accept optional filter
 
    Stop and report the error if authentication fails, the URL is invalid, or the repository is inaccessible.
 
-3. Fetch the issues. Replace `<state>` and `<limit>` with the requested values or defaults:
+3. Fetch the issues. Replace `<state>` and `<limit>` with the requested values or defaults. Omit `<label-flags>` when no label filter was requested:
 
    ```sh
-   gh issue list --repo "$repository" --state <state> --limit <limit> \
+    gh issue list --repo "$repository" --state <state> --limit <limit> <label-flags> \
      --json number,title,state,author,labels,assignees,createdAt,updatedAt,url
    ```
 
-   Use `--search "<query>"` when the user supplies search criteria. Remember that pull requests are not included by `gh issue list`.
+    Add one `--label "<label>"` flag for each requested label. For example:
 
-4. Present a concise list containing each issue's number, title, state, labels, assignees, updated date, and URL. State the repository and filters used, preserve the CLI's ordering, and say clearly when no issues match.
+    ```sh
+    gh issue list --repo "$repository" --state open --limit 30 \
+       --label "bug" --label "ready to do" \
+       --json number,title,state,author,labels,assignees,createdAt,updatedAt,url
+    ```
+
+    Multiple `--label` flags return issues matching all specified labels. Use `--search "<query>"` when the user supplies other search criteria. Remember that pull requests are not included by `gh issue list`.
+
+4. Present a concise list containing each issue's number, title, state, labels, assignees, updated date, and URL. State the repository and all filters used, preserve the CLI's ordering, and say clearly when no issues match.
 
 For machine-readable output, return the JSON from step 3 without reshaping it unless the user requests another format. Never expose authentication tokens or include them in commands, logs, or output.
