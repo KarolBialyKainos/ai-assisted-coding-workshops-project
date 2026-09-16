@@ -1,13 +1,7 @@
 const STORAGE_KEY = 'kainos-todo:todos';
 
 const state = {
-  todos: [
-    // TODO Task 1: remove these hardcoded todos and load from localStorage instead
-    { id: 1, text: 'Listen carefully to the trainer 🎧', done: true, createdAt: '2026-01-01T09:00:00.000Z', priority: null },
-    { id: 2, text: 'Stop asking ChatGPT, use Copilot instead', done: false, createdAt: '2026-01-01T10:00:00.000Z', priority: null },
-    { id: 3, text: 'Actually read the prompt before hitting Enter', done: false, createdAt: '2026-01-01T11:00:00.000Z', priority: null },
-    { id: 4, text: 'Work hard on tasks (yes, all 5 of them)', done: false, createdAt: '2026-01-01T12:00:00.000Z', priority: null },
-  ],
+  todos: [],
   filter: 'all',
   aiLoading: false,
 };
@@ -15,15 +9,40 @@ const state = {
 // ── Persistence ────────────────────────────────────────────────
 
 function loadState() {
+  const storedTodos = localStorage.getItem(STORAGE_KEY);
+
+  if (storedTodos) {
+    try {
+      const parsedTodos = JSON.parse(storedTodos);
+      state.todos = Array.isArray(parsedTodos) ? parsedTodos : [];
+    } catch (error) {
+      state.todos = [];
+    }
+  }
+
   render();
 }
 
 function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.todos));
 }
 
 // ── Business logic ─────────────────────────────────────────────
 
 function addTodo(text) {
+  const trimmedText = text.trim();
+  if (!trimmedText) return;
+
+  state.todos.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : Date.now(),
+    text: trimmedText,
+    done: false,
+    createdAt: new Date().toISOString(),
+    priority: null,
+  });
+
+  saveState();
+  render();
 }
 
 function toggleTodo(id) {
@@ -50,12 +69,18 @@ function renderList() {
   list.innerHTML = visible.map(todo => `
     <li class="todo-item${todo.done ? ' done' : ''}" data-id="${todo.id}">
       <input class="todo-checkbox" type="checkbox" ${todo.done ? 'checked' : ''} />
-      <span class="todo-text">${todo.text}</span>
+      <span class="todo-text">${escapeHtml(todo.text)}</span>
       ${todo.priority ? `<span class="priority-badge priority-${todo.priority}">${todo.priority}</span>` : ''}
       <button class="btn-delete" title="Delete">✕</button>
     </li>
   `).join('');
   // TODO Task 2: wire checkbox and delete button via event delegation in initHandlers()
+}
+
+function escapeHtml(text) {
+  const element = document.createElement('div');
+  element.textContent = text;
+  return element.innerHTML;
 }
 
 function renderEmptyState() {
@@ -90,6 +115,14 @@ function render() {
 // ── Event wiring ───────────────────────────────────────────────
 
 function initHandlers() {
+
+  document.getElementById('add-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const input = document.getElementById('todo-input');
+    addTodo(input.value);
+    input.value = '';
+  });
 
   // Options link
   document.getElementById('options-link').addEventListener('click', (e) => {
